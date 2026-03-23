@@ -1,520 +1,128 @@
-<p align="center">
-  <img src="public/assets/openfang-logo.png" width="160" alt="OpenFang Logo" />
-</p>
+# WorkFang
 
-<h1 align="center">OpenFang</h1>
-<h3 align="center">The Agent Operating System</h3>
+WorkFang 是基于开源 Agent Operating System **OpenFang** 的企业化发行与扩展版本，目标是构建适合企业场景的自主 Agent（Autonomous Agent）系统，让 Agent 更贴近业务、部署更简单、管理更可控。
 
-<p align="center">
-  Open-source Agent OS built in Rust. 137K LOC. 14 crates. 1,767+ tests. Zero clippy warnings.<br/>
-  <strong>One binary. Battle-tested. Agents that actually work for you.</strong>
-</p>
+## 目录
 
-<p align="center">
-  <a href="https://openfang.sh/docs">Documentation</a> &bull;
-  <a href="https://openfang.sh/docs/getting-started">Quick Start</a> &bull;
-  <a href="https://x.com/openfangg">Twitter / X</a>
-</p>
+- [项目定位](#项目定位)
+- [核心能力](#核心能力)
+- [架构说明](#架构说明)
+- [终端与用户模式](#终端与用户模式)
+- [快速开始](#快速开始)
+- [文档导航](#文档导航)
+- [与 OpenFang 的关系](#与-openfang-的关系)
+- [开发与贡献](#开发与贡献)
+- [许可证](#许可证)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/language-Rust-orange?style=flat-square" alt="Rust" />
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" />
-  <img src="https://img.shields.io/badge/version-0.3.30-green?style=flat-square" alt="v0.3.30" />
-  <img src="https://img.shields.io/badge/tests-1,767%2B%20passing-brightgreen?style=flat-square" alt="Tests" />
-  <img src="https://img.shields.io/badge/clippy-0%20warnings-brightgreen?style=flat-square" alt="Clippy" />
-  <a href="https://www.buymeacoffee.com/openfang" target="_blank"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
-</p>
+## 项目定位
 
----
+1. WorkFang 基于开源 Agent Operating System OpenFang 开发，旨在创建适合企业的自主 Agent（Autonomous Agent），实现贴近业务的简化操作。
+2. 架构上，WorkFang 提供企业管理的配置服务器，通过安全服务将组织配置项下发到各客户端，为 Agent 执行提供统一配置与管控能力。
+3. 终端以 Desktop App 形式提供，简化安装和配置。默认采用终端用户模式（End User Mode）；Super User 在完成鉴权后可切换到 Power User 模式进行配置。
 
-> **v0.3.30 — Security Hardening Release (March 2026)**
->
-> OpenFang is feature-complete but still pre-1.0. You may encounter rough edges or breaking changes between minor versions. We ship fast and fix fast. Pin to a specific commit for production use until v1.0. [Report issues here.](https://github.com/RightNow-AI/openfang/issues)
+## 核心能力
 
----
+- 企业级 Agent 运行底座：继承 OpenFang 的 Agent OS 能力。
+- 组织级配置中心：集中管理组织配置并安全下发到终端。
+- Desktop 优先体验：降低一线用户的安装与配置门槛。
+- 双层用户权限模型：默认 End User，授权后进入 Power User。
+- 面向业务场景：通过预置与可配置能力，减少手工操作路径。
 
-## What is OpenFang?
+## 架构说明
 
-OpenFang is an **open-source Agent Operating System** — not a chatbot framework, not a Python wrapper around an LLM, not a "multi-agent orchestrator." It is a full operating system for autonomous agents, built from scratch in Rust.
+WorkFang 采用“中心化配置管理 + 终端执行”的架构：
 
-Traditional agent frameworks wait for you to type something. OpenFang runs **autonomous agents that work for you** — on schedules, 24/7, building knowledge graphs, monitoring targets, generating leads, managing your social media, and reporting results to your dashboard.
+- 配置服务器（Enterprise Config Server）
+- 安全配置分发服务（Secure Delivery Service）
+- Desktop 客户端（内置 Agent 运行与执行能力）
 
-The entire system compiles to a **single ~32MB binary**. One install, one command, your agents are live.
+典型流程：
 
-```bash
-curl -fsSL https://openfang.sh/install | sh
-openfang init
-openfang start
-# Dashboard live at http://localhost:4200
-```
+1. Super User 在企业侧完成配置管理。
+2. 配置服务器通过安全服务向组织终端下发配置项。
+3. Desktop 客户端拉取并应用配置。
+4. 本地 Agent 按组织策略执行任务并反馈状态。
 
-<details>
-<summary><strong>Windows</strong></summary>
+## 终端与用户模式
 
-```powershell
-irm https://openfang.sh/install.ps1 | iex
-openfang init
-openfang start
-```
+### End User Mode（默认）
 
-</details>
+- 面向业务终端用户。
+- 提供开箱即用的 Agent 使用体验。
+- 隐藏复杂系统配置，降低误操作风险。
 
----
+### Power User Mode（鉴权切换）
 
-## Hands: Agents That Actually Do Things
+- 仅 Super User 鉴权通过后可用。
+- 用于高级配置、策略调整与组织级管理操作。
+- 与默认模式隔离，确保日常使用稳定性。
 
-<p align="center"><em>"Traditional agents wait for you to type. Hands work <strong>for</strong> you."</em></p>
+## 快速开始
 
-**Hands** are OpenFang's core innovation — pre-built autonomous capability packages that run independently, on schedules, without you having to prompt them. This is not a chatbot. This is an agent that wakes up at 6 AM, researches your competitors, builds a knowledge graph, scores the findings, and delivers a report to your Telegram before you've had coffee.
+> 当前仓库保留 OpenFang 原生工程结构。若你是首次接触，建议先阅读 OpenFang 原始 README 与文档。
 
-Each Hand bundles:
-- **HAND.toml** — Manifest declaring tools, settings, requirements, and dashboard metrics
-- **System Prompt** — Multi-phase operational playbook (not a one-liner — these are 500+ word expert procedures)
-- **SKILL.md** — Domain expertise reference injected into context at runtime
-- **Guardrails** — Approval gates for sensitive actions (e.g. Browser Hand requires approval before any purchase)
-
-All compiled into the binary. No downloading, no pip install, no Docker pull.
-
-### The 7 Bundled Hands
-
-| Hand | What It Actually Does |
-|------|----------------------|
-| **Clip** | Takes a YouTube URL, downloads it, identifies the best moments, cuts them into vertical shorts with captions and thumbnails, optionally adds AI voice-over, and publishes to Telegram and WhatsApp. 8-phase pipeline. FFmpeg + yt-dlp + 5 STT backends. |
-| **Lead** | Runs daily. Discovers prospects matching your ICP, enriches them with web research, scores 0-100, deduplicates against your existing database, and delivers qualified leads in CSV/JSON/Markdown. Builds ICP profiles over time. |
-| **Collector** | OSINT-grade intelligence. You give it a target (company, person, topic). It monitors continuously — change detection, sentiment tracking, knowledge graph construction, and critical alerts when something important shifts. |
-| **Predictor** | Superforecasting engine. Collects signals from multiple sources, builds calibrated reasoning chains, makes predictions with confidence intervals, and tracks its own accuracy using Brier scores. Has a contrarian mode that deliberately argues against consensus. |
-| **Researcher** | Deep autonomous researcher. Cross-references multiple sources, evaluates credibility using CRAAP criteria (Currency, Relevance, Authority, Accuracy, Purpose), generates cited reports with APA formatting, supports multiple languages. |
-| **Twitter** | Autonomous Twitter/X account manager. Creates content in 7 rotating formats, schedules posts for optimal engagement, responds to mentions, tracks performance metrics. Has an approval queue — nothing posts without your OK. |
-| **Browser** | Web automation agent. Navigates sites, fills forms, clicks buttons, handles multi-step workflows. Uses Playwright bridge with session persistence. **Mandatory purchase approval gate** — it will never spend your money without explicit confirmation. |
+### 1) 获取代码
 
 ```bash
-# Activate the Researcher Hand — it starts working immediately
-openfang hand activate researcher
-
-# Check its progress anytime
-openfang hand status researcher
-
-# Activate lead generation on a daily schedule
-openfang hand activate lead
-
-# Pause without losing state
-openfang hand pause lead
-
-# See all available Hands
-openfang hand list
+git clone <your-workfang-repo-url>
+cd WorkFang
 ```
 
-**Build your own.** Define a `HAND.toml` with tools, settings, and a system prompt. Publish to FangHub.
-
----
-
-## OpenFang vs The Landscape
-
-<p align="center">
-  <img src="public/assets/openfang-vs-claws.png" width="600" alt="OpenFang vs OpenClaw vs ZeroClaw" />
-</p>
-
-### Benchmarks: Measured, Not Marketed
-
-All data from official documentation and public repositories — February 2026.
-
-#### Cold Start Time (lower is better)
-
-```
-ZeroClaw   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   10 ms
-OpenFang   ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  180 ms    ★
-LangGraph  █████████████████░░░░░░░░░░░░░░░░░░░░░░░░░  2.5 sec
-CrewAI     ████████████████████░░░░░░░░░░░░░░░░░░░░░░  3.0 sec
-AutoGen    ██████████████████████████░░░░░░░░░░░░░░░░░  4.0 sec
-OpenClaw   █████████████████████████████████████████░░  5.98 sec
-```
-
-#### Idle Memory Usage (lower is better)
-
-```
-ZeroClaw   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    5 MB
-OpenFang   ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   40 MB    ★
-LangGraph  ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░  180 MB
-CrewAI     ████████████████████░░░░░░░░░░░░░░░░░░░░░░░  200 MB
-AutoGen    █████████████████████████░░░░░░░░░░░░░░░░░░  250 MB
-OpenClaw   ████████████████████████████████████████░░░░  394 MB
-```
-
-#### Install Size (lower is better)
-
-```
-ZeroClaw   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  8.8 MB
-OpenFang   ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   32 MB    ★
-CrewAI     ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  100 MB
-LangGraph  ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  150 MB
-AutoGen    ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  200 MB
-OpenClaw   ████████████████████████████████████████░░░░  500 MB
-```
-
-#### Security Systems (higher is better)
-
-```
-OpenFang   ████████████████████████████████████████████   16      ★
-ZeroClaw   ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░    6
-OpenClaw   ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    3
-AutoGen    █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    2
-LangGraph  █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    2
-CrewAI     ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    1
-```
-
-#### Channel Adapters (higher is better)
-
-```
-OpenFang   ████████████████████████████████████████████   40      ★
-ZeroClaw   ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░   15
-OpenClaw   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   13
-CrewAI     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0
-AutoGen    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0
-LangGraph  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0
-```
-
-#### LLM Providers (higher is better)
-
-```
-ZeroClaw   ████████████████████████████████████████████   28
-OpenFang   ██████████████████████████████████████████░░   27      ★
-LangGraph  ██████████████████████░░░░░░░░░░░░░░░░░░░░░   15
-CrewAI     ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   10
-OpenClaw   ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   10
-AutoGen    ███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    8
-```
-
-### Feature-by-Feature Comparison
-
-| Feature | OpenFang | OpenClaw | ZeroClaw | CrewAI | AutoGen | LangGraph |
-|---------|----------|----------|----------|--------|---------|-----------|
-| **Language** | **Rust** | TypeScript | **Rust** | Python | Python | Python |
-| **Autonomous Hands** | **7 built-in** | None | None | None | None | None |
-| **Security Layers** | **16 discrete** | 3 basic | 6 layers | 1 basic | Docker | AES enc. |
-| **Agent Sandbox** | **WASM dual-metered** | None | Allowlists | None | Docker | None |
-| **Channel Adapters** | **40** | 13 | 15 | 0 | 0 | 0 |
-| **Built-in Tools** | **53 + MCP + A2A** | 50+ | 12 | Plugins | MCP | LC tools |
-| **Memory** | **SQLite + vector** | File-based | SQLite FTS5 | 4-layer | External | Checkpoints |
-| **Desktop App** | **Tauri 2.0** | None | None | None | Studio | None |
-| **Audit Trail** | **Merkle hash-chain** | Logs | Logs | Tracing | Logs | Checkpoints |
-| **Cold Start** | **<200ms** | ~6s | ~10ms | ~3s | ~4s | ~2.5s |
-| **Install Size** | **~32 MB** | ~500 MB | ~8.8 MB | ~100 MB | ~200 MB | ~150 MB |
-| **License** | MIT | MIT | MIT | MIT | Apache 2.0 | MIT |
-
----
-
-## 16 Security Systems — Defense in Depth
-
-OpenFang doesn't bolt security on after the fact. Every layer is independently testable and operates without a single point of failure.
-
-| # | System | What It Does |
-|---|--------|-------------|
-| 1 | **WASM Dual-Metered Sandbox** | Tool code runs in WebAssembly with fuel metering + epoch interruption. A watchdog thread kills runaway code. |
-| 2 | **Merkle Hash-Chain Audit Trail** | Every action is cryptographically linked to the previous one. Tamper with one entry and the entire chain breaks. |
-| 3 | **Information Flow Taint Tracking** | Labels propagate through execution — secrets are tracked from source to sink. |
-| 4 | **Ed25519 Signed Agent Manifests** | Every agent identity and capability set is cryptographically signed. |
-| 5 | **SSRF Protection** | Blocks private IPs, cloud metadata endpoints, and DNS rebinding attacks. |
-| 6 | **Secret Zeroization** | `Zeroizing<String>` auto-wipes API keys from memory the instant they're no longer needed. |
-| 7 | **OFP Mutual Authentication** | HMAC-SHA256 nonce-based, constant-time verification for P2P networking. |
-| 8 | **Capability Gates** | Role-based access control — agents declare required tools, the kernel enforces it. |
-| 9 | **Security Headers** | CSP, X-Frame-Options, HSTS, X-Content-Type-Options on every response. |
-| 10 | **Health Endpoint Redaction** | Public health check returns minimal info. Full diagnostics require authentication. |
-| 11 | **Subprocess Sandbox** | `env_clear()` + selective variable passthrough. Process tree isolation with cross-platform kill. |
-| 12 | **Prompt Injection Scanner** | Detects override attempts, data exfiltration patterns, and shell reference injection in skills. |
-| 13 | **Loop Guard** | SHA256-based tool call loop detection with circuit breaker. Handles ping-pong patterns. |
-| 14 | **Session Repair** | 7-phase message history validation and automatic recovery from corruption. |
-| 15 | **Path Traversal Prevention** | Canonicalization with symlink escape prevention. `../` doesn't work here. |
-| 16 | **GCRA Rate Limiter** | Cost-aware token bucket rate limiting with per-IP tracking and stale cleanup. |
-
----
-
-## Architecture
-
-14 Rust crates. 137,728 lines of code. Modular kernel design.
-
-```
-openfang-kernel      Orchestration, workflows, metering, RBAC, scheduler, budget tracking
-openfang-runtime     Agent loop, 3 LLM drivers, 53 tools, WASM sandbox, MCP, A2A
-openfang-api         140+ REST/WS/SSE endpoints, OpenAI-compatible API, dashboard
-openfang-channels    40 messaging adapters with rate limiting, DM/group policies
-openfang-memory      SQLite persistence, vector embeddings, canonical sessions, compaction
-openfang-types       Core types, taint tracking, Ed25519 manifest signing, model catalog
-openfang-skills      60 bundled skills, SKILL.md parser, FangHub marketplace
-openfang-hands       7 autonomous Hands, HAND.toml parser, lifecycle management
-openfang-extensions  25 MCP templates, AES-256-GCM credential vault, OAuth2 PKCE
-openfang-wire        OFP P2P protocol with HMAC-SHA256 mutual authentication
-openfang-cli         CLI with daemon management, TUI dashboard, MCP server mode
-openfang-desktop     Tauri 2.0 native app (system tray, notifications, global shortcuts)
-openfang-migrate     OpenClaw, LangChain, AutoGPT migration engine
-xtask                Build automation
-```
-
----
-
-## 40 Channel Adapters
-
-Connect your agents to every platform your users are on.
-
-**Core:** Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Email (IMAP/SMTP)
-**Enterprise:** Microsoft Teams, Mattermost, Google Chat, Webex, Feishu/Lark, Zulip
-**Social:** LINE, Viber, Facebook Messenger, Mastodon, Bluesky, Reddit, LinkedIn, Twitch
-**Community:** IRC, XMPP, Guilded, Revolt, Keybase, Discourse, Gitter
-**Privacy:** Threema, Nostr, Mumble, Nextcloud Talk, Rocket.Chat, Ntfy, Gotify
-**Workplace:** Pumble, Flock, Twist, DingTalk, Zalo, Webhooks
-
-Each adapter supports per-channel model overrides, DM/group policies, rate limiting, and output formatting.
-
----
-
-## WhatsApp Web Gateway (QR Code)
-
-Connect your personal WhatsApp account to OpenFang via QR code — just like WhatsApp Web. No Meta Business account required.
-
-### Prerequisites
-
-- **Node.js >= 18** installed ([download](https://nodejs.org/))
-- OpenFang installed and initialized
-
-### Setup
-
-**1. Install the gateway dependencies:**
+### 2) 本地构建（Rust Workspace）
 
 ```bash
-cd packages/whatsapp-gateway
-npm install
+cargo build --workspace
 ```
 
-**2. Configure `config.toml`:**
-
-```toml
-[channels.whatsapp]
-mode = "web"
-default_agent = "assistant"
-```
-
-**3. Set the gateway URL (choose one):**
-
-Add to your shell profile for persistence:
+### 3) 运行测试（可选）
 
 ```bash
-# macOS / Linux
-echo 'export WHATSAPP_WEB_GATEWAY_URL="http://127.0.0.1:3009"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-Or set it inline when starting the gateway:
-
-```bash
-export WHATSAPP_WEB_GATEWAY_URL="http://127.0.0.1:3009"
-```
-
-**4. Start the gateway:**
-
-```bash
-node packages/whatsapp-gateway/index.js
-```
-
-The gateway listens on port `3009` by default. Override with `WHATSAPP_GATEWAY_PORT`.
-
-**5. Start OpenFang:**
-
-```bash
-openfang start
-# Dashboard at http://localhost:4200
-```
-
-**6. Scan the QR code:**
-
-Open the dashboard → **Channels** → **WhatsApp**. A QR code will appear. Scan it with your phone:
-
-> **WhatsApp** → **Settings** → **Linked Devices** → **Link a Device**
-
-Once scanned, the status changes to `connected` and incoming messages are routed to your configured agent.
-
-### Gateway Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `WHATSAPP_WEB_GATEWAY_URL` | Gateway URL for OpenFang to connect to | _(empty = disabled)_ |
-| `WHATSAPP_GATEWAY_PORT` | Port the gateway listens on | `3009` |
-| `OPENFANG_URL` | OpenFang API URL the gateway reports to | `http://127.0.0.1:4200` |
-| `OPENFANG_DEFAULT_AGENT` | Agent that handles incoming messages | `assistant` |
-
-### Gateway API Endpoints
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| `POST` | `/login/start` | Generate QR code (returns base64 PNG) |
-| `GET` | `/login/status` | Connection status (`disconnected`, `qr_ready`, `connected`) |
-| `POST` | `/message/send` | Send a message (`{ "to": "5511999999999", "text": "Hello" }`) |
-| `GET` | `/health` | Health check |
-
-### Alternative: WhatsApp Cloud API
-
-For production workloads, use the [WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api) with a Meta Business account. See the [Cloud API configuration docs](https://openfang.sh/docs/channels/whatsapp).
-
-
-
----
-
-## 27 LLM Providers — 123+ Models
-
-3 native drivers (Anthropic, Gemini, OpenAI-compatible) route to 27 providers:
-
-Anthropic, Gemini, OpenAI, Groq, DeepSeek, OpenRouter, Together, Mistral, Fireworks, Cohere, Perplexity, xAI, AI21, Cerebras, SambaNova, HuggingFace, Replicate, Ollama, vLLM, LM Studio, Qwen, MiniMax, Zhipu, Moonshot, Qianfan, Bedrock, and more.
-
-Intelligent routing with task complexity scoring, automatic fallback, cost tracking, and per-model pricing.
-
----
-
-## Migrate from OpenClaw
-
-Already running OpenClaw? One command:
-
-```bash
-# Migrate everything — agents, memory, skills, configs
-openfang migrate --from openclaw
-
-# Migrate from a specific path
-openfang migrate --from openclaw --path ~/.openclaw
-
-# Dry run first to see what would change
-openfang migrate --from openclaw --dry-run
-```
-
-The migration engine imports your agents, conversation history, skills, and configuration. OpenFang reads SKILL.md natively and is compatible with the ClawHub marketplace.
-
----
-
-## OpenAI-Compatible API
-
-Drop-in replacement. Point your existing tools at OpenFang:
-
-```bash
-curl -X POST localhost:4200/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "researcher",
-    "messages": [{"role": "user", "content": "Analyze Q4 market trends"}],
-    "stream": true
-  }'
-```
-
-140+ REST/WS/SSE endpoints covering agents, memory, workflows, channels, models, skills, A2A, Hands, and more.
-
----
-
-## Quick Start
-
-```bash
-# 1. Install (macOS/Linux)
-curl -fsSL https://openfang.sh/install | sh
-
-# 2. Initialize — walks you through provider setup
-openfang init
-
-# 3. Start the daemon
-openfang start
-
-# 4. Dashboard is live at http://localhost:4200
-
-# 5. Activate a Hand — it starts working for you
-openfang hand activate researcher
-
-# 6. Chat with an agent
-openfang chat researcher
-> "What are the emerging trends in AI agent frameworks?"
-
-# 7. Spawn a pre-built agent
-openfang agent spawn coder
-```
-
-<details>
-<summary><strong>Windows (PowerShell)</strong></summary>
-
-```powershell
-irm https://openfang.sh/install.ps1 | iex
-openfang init
-openfang start
-```
-
-</details>
-
----
-
-## Development
-
-```bash
-# Build the workspace
-cargo build --workspace --lib
-
-# Run all tests (1,767+)
 cargo test --workspace
-
-# Lint (must be 0 warnings)
-cargo clippy --workspace --all-targets -- -D warnings
-
-# Format
-cargo fmt --all -- --check
 ```
 
----
+### 4) 启动与运行
 
-## Stability Notice
+WorkFang 在当前阶段沿用 OpenFang 的核心运行方式。具体初始化、启动和 CLI 细节请参考下方链接：
 
-OpenFang v0.3.30 is pre-1.0. The architecture is solid, the test suite is comprehensive, and the security model is comprehensive. That said:
+- OpenFang README: https://github.com/RightNow-AI/openfang/blob/main/README.md
 
-- **Breaking changes** may occur between minor versions until v1.0
-- **Some Hands** are more mature than others (Browser and Researcher are the most battle-tested)
-- **Edge cases** exist — if you find one, [open an issue](https://github.com/RightNow-AI/openfang/issues)
-- **Pin to a specific commit** for production deployments until v1.0
+## 文档导航
 
-We ship fast and fix fast. The goal is a rock-solid v1.0 by mid-2026.
+项目文档目录：`docs/`
 
----
+- `docs/getting-started.md`
+- `docs/architecture.md`
+- `docs/configuration.md`
+- `docs/cli-reference.md`
+- `docs/security.md`
+- `docs/desktop.md`
 
-## Security
+总览入口：`docs/README.md`
 
-To report a security vulnerability, email **jaber@rightnowai.co**. We take all reports seriously and will respond within 48 hours.
+## 与 OpenFang 的关系
 
----
+WorkFang 以 OpenFang 为技术底座进行企业化增强。为避免信息分叉，底层能力与通用使用方式优先参考 OpenFang 官方文档：
 
-## License
+- OpenFang README: https://github.com/RightNow-AI/openfang/blob/main/README.md
+- OpenFang Docs: https://openfang.sh/docs
 
-MIT — use it however you want.
+## 开发与贡献
 
----
+- 贡献指南：`CONTRIBUTING.md`
+- 变更记录：`CHANGELOG.md`
+- 安全策略：`SECURITY.md`
 
-## Links
+提交变更前建议执行：
 
-- [Website & Documentation](https://openfang.sh)
-- [Quick Start Guide](https://openfang.sh/docs/getting-started)
-- [GitHub](https://github.com/RightNow-AI/openfang)
-- [Discord](https://discord.gg/sSJqgNnq6X)
-- [Twitter / X](https://x.com/openfangg)
+```bash
+cargo fmt --all
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
 
----
+## 许可证
 
-## Built by RightNow
+本项目当前沿用仓库内许可证文件：
 
-<p align="center">
-  <a href="https://www.rightnowai.co/">
-    <img src="public/assets/rightnow-logo.webp" width="60" alt="RightNow Logo" />
-  </a>
-</p>
-
-<p align="center">
-  OpenFang is built and maintained by <a href="https://x.com/Akashi203"><strong>Jaber</strong></a>, Founder of <a href="https://www.rightnowai.co/"><strong>RightNow</strong></a>.
-</p>
-
-<p align="center">
-  <a href="https://www.rightnowai.co/">Website</a> &bull;
-  <a href="https://x.com/Akashi203">Twitter / X</a> &bull;
-  <a href="https://www.buymeacoffee.com/openfang" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
-</p>
-
----
-
-<p align="center">
-  <strong>Built with Rust. Secured with 16 layers. Agents that actually work for you.</strong>
-</p>
+- `LICENSE-MIT`
+- `LICENSE-APACHE`
