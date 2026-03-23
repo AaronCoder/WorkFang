@@ -1,128 +1,52 @@
-# WorkFang
+# WorkFang 
 
-WorkFang 是基于开源 Agent Operating System **OpenFang** 的企业化发行与扩展版本，目标是构建适合企业场景的自主 Agent（Autonomous Agent）系统，让 Agent 更贴近业务、部署更简单、管理更可控。
+**WorkFang** 是一个企业级 AI 智能体（Agent）桌面平台。它基于强大的、由 Rust 编写的 [OpenFang](https://github.com/OpenFang/OpenFang) Agent OS 构建，将其从极客专属的命令行工具，重塑为面向业务用户的**“云端管控 + 混合计算 (Cloud-Edge Hybrid Execution)”** 架构。
 
-## 目录
+WorkFang 旨在让普通员工拥有全天候待命的“数字同事”，同时满足企业对数据隐私、权限管控和高可用性的严苛要求。
 
-- [项目定位](#项目定位)
-- [核心能力](#核心能力)
-- [架构说明](#架构说明)
-- [终端与用户模式](#终端与用户模式)
-- [快速开始](#快速开始)
-- [文档导航](#文档导航)
-- [与 OpenFang 的关系](#与-openfang-的关系)
-- [开发与贡献](#开发与贡献)
-- [许可证](#许可证)
+## 🎯 项目愿景与目标
 
-## 项目定位
+大模型和 Agent 技术不应受限于复杂的本地环境配置，也不应以牺牲企业本地数据隐私为代价。WorkFang 的核心目标是：
+1. **简化终端体验**：提供优雅的 Desktop App 交互界面，隐藏底层配置复杂度。
+2. **捍卫数据隐私**：核心业务数据处理在用户本地的 WASM 沙盒中执行，敏感文件不上云。
+3. **企业集中治理**：实现多租户/角色的权限管控、凭证分发、操作审计及资产共享。
+4. **全天候高可用 (Cloud Fallback)**：引入云端降级与智能路由机制，即使办公 PC 离线，也能通过云端共享节点保障基础指令的即时响应。
 
-1. WorkFang 基于开源 Agent Operating System OpenFang 开发，旨在创建适合企业的自主 Agent（Autonomous Agent），实现贴近业务的简化操作。
-2. 架构上，WorkFang 提供企业管理的配置服务器，通过安全服务将组织配置项下发到各客户端，为 Agent 执行提供统一配置与管控能力。
-3. 终端以 Desktop App 形式提供，简化安装和配置。默认采用终端用户模式（End User Mode）；Super User 在完成鉴权后可切换到 Power User 模式进行配置。
+## 🏗️ 核心架构设计 (三层混合架构)
 
-## 核心能力
+WorkFang 摒弃了纯本地或纯云端的单边路线，采用了灵活且高可用的 **3 层架构 (3-Tier Architecture)**：
 
-- 企业级 Agent 运行底座：继承 OpenFang 的 Agent OS 能力。
-- 组织级配置中心：集中管理组织配置并安全下发到终端。
-- Desktop 优先体验：降低一线用户的安装与配置门槛。
-- 双层用户权限模型：默认 End User，授权后进入 Power User。
-- 面向业务场景：通过预置与可配置能力，减少手工操作路径。
+### Tier 1: Server 端 (指挥中心 / Control Plane)
+运行在 K8S 集群中的核心服务 Pod，是整个 WorkFang 生态的“大脑”，**不负责具体的业务逻辑执行**，专注于治理与调度：
+* **核心配置中心**：集中管理 User（用户）、Role（角色）、Device（设备）以及 Agent/Workflow 的全量结构化配置数据。
+* **统一网关与路由**：作为外部 Channel（Slack/微信等）的唯一 Webhook 接收端，负责公网隔离与请求鉴权。
+* **审计日志网关**：统一收集并持久化云端及本地节点的脱敏运行日志，用于安全审计与 Token 计费。
 
-## 架构说明
+### Tier 2: Cloud 共享节点 (云端降级与执行池 / Cloud Shared Execution Node)
+以 Docker 容器化形式运行在 K8S 中的独立计算 Pod，部署了公共的 WorkFang 引擎，作为高可用缓冲层：
+* **智能意图识别**：当外部 Channel 接收到任务时，该节点会调用 LLM 判断任务类型：是否强依赖员工本地硬盘的文件或本地局域网环境？
+* **云端即时执行 (Stateless Execution)**：如果任务仅涉及公网信息检索、文本生成或 API 调用（如“帮我写一封感谢信”），则直接在该云端公共节点执行并秒级返回结果，实现**云端无感降级**。
+* **离线任务排队 (Message Queueing)**：如果判定任务必须操作本地文件，且员工的 Tier 3 本地设备离线，该节点会将任务挂起并推入 MQ 等待队列，待本地设备上线后自动下发执行。
 
-WorkFang 采用“中心化配置管理 + 终端执行”的架构：
+### Tier 3: Local 设备节点 (边缘执行引擎 / Edge Worker Node)
+员工日常办公的 PC 环境（Windows/macOS），Agent 常驻于此，是真正的“本地数字分身”：
+* **长连接同步引擎**：Desktop App 通过 WebSocket 实时刻拉取 Tier 1 的最新指令与配置，在本地动态热重载。
+* **本地 WASM 沙盒**：启动底层的 OpenFang 引擎，执行极其消耗算力或涉及企业机密的任务（如读取本地报表、操作本地 Excel 等）。
+* **绝对的数据主权**：本地生成的文件和处理的敏感数据永远不出局域网，仅将执行结果或脱敏日志回传。
 
-- 配置服务器（Enterprise Config Server）
-- 安全配置分发服务（Secure Delivery Service）
-- Desktop 客户端（内置 Agent 运行与执行能力）
+## ✨ 核心特性
 
-典型流程：
+### 1. Agent 创造 Agent (Agentic Orchestration)
+* 用户通过自然语言向 Builder Agent 描述需求，生成标准化的 JSON 配置。
+* 配置通过 API 提交至 Tier 1 Server 校验入库，随后下发至边缘节点热重载。
+* 全程不涉及高危的本地文件系统提权，实现安全的自动化流水线创建。
 
-1. Super User 在企业侧完成配置管理。
-2. 配置服务器通过安全服务向组织终端下发配置项。
-3. Desktop 客户端拉取并应用配置。
-4. 本地 Agent 按组织策略执行任务并反馈状态。
+### 2. 跨端安全遥控与智能降级
+* **随时唤醒**：通勤路上通过手机 Slack 下发工作指令，Tier 1 网关安全拦截并鉴权。
+* **无缝接力**：若电脑在线，Tier 3 本地节点直接接管；若电脑关机，Tier 2 云端节点智能评估并决定是云端代为执行，还是加入本地等待队列，确保任务不丢失、体验不断层。
 
-## 终端与用户模式
+## 🚀 典型应用场景
 
-### End User Mode（默认）
-
-- 面向业务终端用户。
-- 提供开箱即用的 Agent 使用体验。
-- 隐藏复杂系统配置，降低误操作风险。
-
-### Power User Mode（鉴权切换）
-
-- 仅 Super User 鉴权通过后可用。
-- 用于高级配置、策略调整与组织级管理操作。
-- 与默认模式隔离，确保日常使用稳定性。
-
-## 快速开始
-
-> 当前仓库保留 OpenFang 原生工程结构。若你是首次接触，建议先阅读 OpenFang 原始 README 与文档。
-
-### 1) 获取代码
-
-```bash
-git clone <your-workfang-repo-url>
-cd WorkFang
-```
-
-### 2) 本地构建（Rust Workspace）
-
-```bash
-cargo build --workspace
-```
-
-### 3) 运行测试（可选）
-
-```bash
-cargo test --workspace
-```
-
-### 4) 启动与运行
-
-WorkFang 在当前阶段沿用 OpenFang 的核心运行方式。具体初始化、启动和 CLI 细节请参考下方链接：
-
-- OpenFang README: https://github.com/RightNow-AI/openfang/blob/main/README.md
-
-## 文档导航
-
-项目文档目录：`docs/`
-
-- `docs/getting-started.md`
-- `docs/architecture.md`
-- `docs/configuration.md`
-- `docs/cli-reference.md`
-- `docs/security.md`
-- `docs/desktop.md`
-
-总览入口：`docs/README.md`
-
-## 与 OpenFang 的关系
-
-WorkFang 以 OpenFang 为技术底座进行企业化增强。为避免信息分叉，底层能力与通用使用方式优先参考 OpenFang 官方文档：
-
-- OpenFang README: https://github.com/RightNow-AI/openfang/blob/main/README.md
-- OpenFang Docs: https://openfang.sh/docs
-
-## 开发与贡献
-
-- 贡献指南：`CONTRIBUTING.md`
-- 变更记录：`CHANGELOG.md`
-- 安全策略：`SECURITY.md`
-
-提交变更前建议执行：
-
-```bash
-cargo fmt --all
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-```
-
-## 许可证
-
-本项目当前沿用仓库内许可证文件：
-
-- `LICENSE-MIT`
-- `LICENSE-APACHE`
+* **离线无缝响应**：周末在家用手机吩咐 Agent“查一下明天的天气和行业新闻”，Tier 2 云端节点瞬间完成并回复，无需开启办公室电脑。
+* **本地私密文档处理**：工作日下发“整理昨天下载的财务发票”指令，指令穿透至 Tier 3，Agent 在本地沙盒安全处理，文档绝不上传云端。
+* **企业级权限治理**：新员工入职，管理员在 Tier 1 后台分配角色，员工登录本地客户端后，专属的“入职引导 Agent”及相关 Workflow 自动就绪。
